@@ -137,11 +137,10 @@ def MatrixExp3(so3mat):
     omgtheta = so3ToVec(so3mat)
     if NearZero(np.linalg.norm(omgtheta)):
         return np.eye(3)
-    else:
-        theta = AxisAng3(omgtheta)[1]
-        omgmat = so3mat / theta
-        return np.eye(3) + np.sin(theta) * omgmat \
-               + (1 - np.cos(theta)) * np.dot(omgmat, omgmat)
+    theta = AxisAng3(omgtheta)[1]
+    omgmat = so3mat / theta
+    return np.eye(3) + np.sin(theta) * omgmat \
+           + (1 - np.cos(theta)) * np.dot(omgmat, omgmat)
 
 def MatrixLog3(R):
     """Computes the matrix logarithm of a rotation matrix
@@ -359,16 +358,15 @@ def MatrixExp6(se3mat):
     omgtheta = so3ToVec(se3mat[0: 3, 0: 3])
     if NearZero(np.linalg.norm(omgtheta)):
         return np.r_[np.c_[np.eye(3), se3mat[0: 3, 3]], [[0, 0, 0, 1]]]
-    else:
-        theta = AxisAng3(omgtheta)[1]
-        omgmat = se3mat[0: 3, 0: 3] / theta
-        return np.r_[np.c_[MatrixExp3(se3mat[0: 3, 0: 3]),
-                           np.dot(np.eye(3) * theta \
-                                  + (1 - np.cos(theta)) * omgmat \
-                                  + (theta - np.sin(theta)) \
-                                    * np.dot(omgmat,omgmat),
-                                  se3mat[0: 3, 3]) / theta],
-                     [[0, 0, 0, 1]]]
+    theta = AxisAng3(omgtheta)[1]
+    omgmat = se3mat[0: 3, 0: 3] / theta
+    return np.r_[np.c_[MatrixExp3(se3mat[0: 3, 0: 3]),
+                       np.dot(np.eye(3) * theta \
+                              + (1 - np.cos(theta)) * omgmat \
+                              + (theta - np.sin(theta)) \
+                                * np.dot(omgmat,omgmat),
+                              se3mat[0: 3, 3]) / theta],
+                 [[0, 0, 0, 1]]]
 
 def MatrixLog6(T):
     """Computes the matrix logarithm of a homogeneous transformation matrix
@@ -393,15 +391,14 @@ def MatrixLog6(T):
         return np.r_[np.c_[np.zeros((3, 3)),
                            [T[0][3], T[1][3], T[2][3]]],
                      [[0, 0, 0, 0]]]
-    else:
-        theta = np.arccos((np.trace(R) - 1) / 2.0)
-        return np.r_[np.c_[omgmat,
-                           np.dot(np.eye(3) - omgmat / 2.0 \
-                           + (1.0 / theta - 1.0 / np.tan(theta / 2.0) / 2) \
-                              * np.dot(omgmat,omgmat) / theta,[T[0][3],
-                                                               T[1][3],
-                                                               T[2][3]])],
-                     [[0, 0, 0, 0]]]
+    theta = np.arccos((np.trace(R) - 1) / 2.0)
+    return np.r_[np.c_[omgmat,
+                       np.dot(np.eye(3) - omgmat / 2.0 \
+                       + (1.0 / theta - 1.0 / np.tan(theta / 2.0) / 2) \
+                          * np.dot(omgmat,omgmat) / theta,[T[0][3],
+                                                           T[1][3],
+                                                           T[2][3]])],
+                 [[0, 0, 0, 0]]]
 
 def ProjectToSO3(mat):
     """Returns a projection of mat into SO(3)
@@ -752,7 +749,7 @@ def IKinBody(Blist, M, T, thetalist0, eomg, ev):
         thetalist = thetalist \
                     + np.dot(np.linalg.pinv(JacobianBody(Blist, \
                                                          thetalist)), Vb)
-        i = i + 1
+        i += 1
         Vb \
         = se3ToVec(MatrixLog6(np.dot(TransInv(FKinBody(M, Blist, \
                                                        thetalist)), T)))
@@ -817,7 +814,7 @@ def IKinSpace(Slist, M, T, thetalist0, eomg, ev):
         thetalist = thetalist \
                     + np.dot(np.linalg.pinv(JacobianSpace(Slist, \
                                                           thetalist)), Vs)
-        i = i + 1
+        i += 1
         Tsb = FKinSpace(M, Slist, thetalist)
         Vs = np.dot(Adjoint(Tsb), \
                     se3ToVec(MatrixLog6(np.dot(TransInv(Tsb), T))))
@@ -1436,7 +1433,7 @@ def ForwardDynamicsTrajectory(thetalist, dthetalist, taumat, g, Ftipmat, \
     dthetamat = taumat.copy().astype(np.float)
     dthetamat[:, 0] = dthetalist
     for i in range(np.array(taumat).shape[1] - 1):
-        for j in range(intRes):
+        for _ in range(intRes):
             ddthetalist \
             = ForwardDynamics(thetalist, dthetalist, taumat[:, i], g, \
                               Ftipmat[:, i], Mlist, Glist, Slist)
@@ -1862,7 +1859,7 @@ def SimulateControl(thetalist, dthetalist, g, Ftipmat, Mlist, Glist, \
         = ComputedTorque(thetacurrent, dthetacurrent, eint, gtilde, \
                          Mtildelist, Gtildelist, Slist, thetamatd[:, i], \
                          dthetamatd[:, i], ddthetamatd[:, i], Kp, Ki, Kd)
-        for j in range(intRes):
+        for _ in range(intRes):
             ddthetalist \
             = ForwardDynamics(thetacurrent, dthetacurrent, taulist, g, \
                               Ftipmat[:, i], Mlist, Glist, Slist)
